@@ -1,34 +1,90 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
+import React, { useState,useEffect, KeyboardEvent} from 'react'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [searched, setSearched] = useState<boolean>(false);
+  const [search, setSearch] = useState<string>();
 
+  function iHitEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      setSearched(true);
+    }
+  }
+ 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+    <div>
+        <h1>Quote Search</h1>
+        <input id="input" onKeyDown={iHitEnter} type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Perry the Platypus"></input>
+        {searched ? <SearchedFor/> : <Random/>}
     </div>
   )
+
+
+
+
+
+
+function Random(){
+
+  interface Quote {
+    author: string;
+    content: string;
+    _id:string;
+    results: Quote[];
+}
+
+  const [flag,setFlag] = useState<boolean>(true);
+  const [quote, setQuote] = useState<Quote>(); 
+
+  useEffect(() => {
+    getQuote();
+  },[])
+
+  async function getQuote(){
+    if (flag){
+      const randomQuoteRequest = await fetch("https://usu-quotes-mimic.vercel.app/api/random");
+      setQuote(await randomQuoteRequest.json());
+    } 
+  }
+
+  return (
+    <div>
+    <p>{quote ? quote.content : "..."}</p>
+    <p>~~{quote ? quote.author : ""}~~</p>
+    </div>);
+}
+
+ function SearchedFor(){
+
+  interface Quote {
+    author: string;
+    content: string;
+    _id:number;
+    results: Quote[];
+}
+
+    const [quotes, setQuotes] = useState<Quote[]|null>(null);   
+    async function getQuotes(){
+    const randomQuoteRequest = await fetch(`https://usu-quotes-mimic.vercel.app/api/search?query=${search}`);
+    if (searched){
+      setQuotes( await randomQuoteRequest.json());
+    }}
+
+    useEffect(() => {
+        getQuotes();
+    },[])
+
+    return (
+        <div> 
+        {quotes ? quotes.results.map((quote: Quote) => (
+            <div key={quote._id}>
+            <p>{quote.content}</p>
+            <p>~~{quote.author}~~</p>
+            </div>
+        )) : "Loading Quotes..."}
+        </div>
+    )
+}
 }
 
 export default App
